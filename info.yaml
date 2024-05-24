@@ -1,0 +1,13 @@
+title: "티빙"
+version: "1.0.0"
+package_name: "tving"
+developer: "kihyyo"
+description: "티빙 VOD 다운로더"
+home: "https://github.com/kihyyo/tving"
+more: "https://raw.githubusercontent.com/kihyyo/tving/main/README.md"
+
+require_plugin: 
+  - "https://github.com/kihyyo/sjva"
+  - "https://github.com/flaskfarm/support_site"
+  - "https://github.com/flaskfarm/ffmpeg"
+

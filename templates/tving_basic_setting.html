@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+
+{{ macros.m_button_group([['globalSettingSaveBtn', '설정 저장']])}}
+{{ macros.m_row_start('5') }}
+{{ macros.m_row_end() }}
+{{ macros.m_hr() }}
+
+<form id="setting">
+{{ macros.setting_select('basic_quality', '기본 화질', [['stream70', '2160p'], ['stream50', '1080p'], ['stream40', '720p'], ['stream30', '480p'], ['stream25', '270p']], col='3', value=arg['basic_quality']) }}
+{{ macros.setting_input_text('basic_save_path', '저장 폴더', value=arg['basic_save_path'], desc=['절대경로 혹은 {PATH_DATA}/download 와 같은 데이터 폴더 기준 상대 경로']) }}
+{{ macros.setting_select('basic_drm', 'DRM_tool', [['WV', 'aria2c'], ['RE', 'm3u8dl_RE']], col='3', value=arg['basic_drm']) }}
+</form>
+
+
+<script type="text/javascript">
+$(document).ready(function(){
+});
+
+
+</script>    
+{% endblock %}

@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% block content %}
+
+<form id="form_search" class="form-inline" style="text-align:left">
+  <div class="container-fluid">
+    <div class="row show-grid">
+      <span class="col-md-4">
+        <select id="order" name="order" class="form-control form-control-sm">
+          <option value="desc">최근순</option>
+          <option value="asc">오래된순</option>
+        </select>
+        <select id="option1" name="option1" class="form-control form-control-sm">
+          <option value="all">전체</option>
+          <option value="completed">다운로드 완료</option>
+          <option value="uncompleted">다운로드 미완료</option>
+          <option value="user_abort">사용자 중지</option>
+          <option value="pf_abort">PF 중지</option>
+          <option value="etc_abort_under_10">FFMPEG 에러</option>
+          <option value="etc_abort_11">패스 - QVOD</option>
+          <option value="etc_abort_12">패스 - 제외 채널</option>
+          <option value="etc_abort_13">패스 - 제외 프로그램</option>
+          <option value="etc_abort_14">화이트리스트 제외</option>
+          <option value="etc_abort_15">에피소드 제외</option>
+        </select>
+      </span>
+      <span class="col-md-8">
+        <input id="keyword" name="keyword" class="form-control form-control-sm w-75" type="text" placeholder="프로그램명" aria-label="Search">
+        <button id="globalSearchSearchBtn" class="btn btn-sm btn-outline-success">검색</button>
+        <button id="globalSearchResetBtn" class="btn btn-sm btn-outline-success">리셋</button>
+      </span>
+    </div>
+  </div>
+</form>
+<div id='page1'></div>
+<div id="list"></div>
+<div id='page2'></div>
+
+
+<script type="text/javascript">
+var last_list_option = "{{arg['tving_recent_last_list_option']}}";
+
+$(document).ready(function(){
+  tmp = last_list_option.split('|');
+  if (tmp.length == 5) {
+    $("#order").val(tmp[0]);
+    $("#keyword").val(tmp[2]);
+    $("#option1").val(tmp[3]);
+    //document.getElementById("option2").value = tmp[4];
+    globalRequestSearch(tmp[1]);
+  } else {
+    globalRequestSearch('1');
+  }
+});
+
+
+///////////////////////
+// 에피소드 버튼
+$("body").on('click', '#basic_search', function(e){
+  e.preventDefault();
+  code = $(this).data('code');
+  $(location).attr('href', '/tving/basic/download?code=' + code)
+});
+
+$("body").on('click', '#program_search_btn', function(e){
+  e.preventDefault();
+  $("#keyword").val($(this).data('program'));
+  globalRequestSearch(1);
+});
+
+$("body").on('click', '#json_btn', function(e){
+  e.preventDefault();
+  var idx = $(this).data('idx');
+  json = current_data.list[idx];
+  showModal(json, "JSON")
+});
+
+$("body").on('click', '#program_search_on_program_btn', function(e){
+  e.preventDefault();
+  code = $(this).data('code');
+  $(location).attr('href', '/tving/program/select?code=' + code)
+});
+
+function add_condition(mode, value) {
+  globalSendCommand('add_condition', mode, value);
+}
+
+$("body").on('click', '#except_channel_btn', function(e){
+  e.preventDefault();
+  add_condition('recent_except_channel', $(this).data('channel'))
+});
+
+$("body").on('click', '#except_program_btn', function(e){
+  e.preventDefault();
+  add_condition('recent_except_program', $(this).data('program'))
+});
+
+$("body").on('click', '#whitelist_program_btn', function(e){
+  e.preventDefault();
+  add_condition('recent_whitelist_program', $(this).data('program'))
+});
+///////////////////////
+
+
+function make_list(ret) {
+  //window.scrollTo(0,0);
+  data = ret;
+  str = '';
+  for (i in data) {
+    str += j_row_start();
+    tmp = '<img src="' + data[i].image + '" class="img-fluid">'
+    str += j_col(3, tmp)
+
+    tmp = '<strong>' + data[i].programtitle + '  ' 
+    if (data[i].episodenumber != '') {
+      tmp += data[i].episodenumber + '회';
+    }
+    tmp += '</strong>';
+    tmp += ' (' + data[i].releasedate + ')'
+    tmp += ' / ' + data[i].channelname
+    tmp += ' / ' + data[i].quality
+    if (data[i].vod_type == 'onair') {
+      tmp += ' ' + '<span style="color:red">퀵VOD</span>'
+    }
+    tmp += '<br><p>';
+    //if ( data.data[i].description != null)
+    //  str += '<p>' + data.data[i].description.replace('\n', '<br>') + '<p>';
+    tmp += '<strong>파일명</strong> : ' + data[i].filename;
+    if (data[i].drm) {
+      tmp += " (" + text_color('DRM') + ")";  
+    }
+
+    tmp += '<br>';
+    tmp += '<strong>에피소드 번호 / 제목</strong> : ' + data[i].episodenumber + ' / ' + data[i].episodetitle;
+    tmp += '<br>';
+    
+    tmp += '<strong>상태</strong> : ' 
+    if (data[i].completed) {
+      tmp += '<span style="color:blue">다운로드 완료</span>';
+    } else if (data[i].user_abort) {
+      tmp += '<span style="color:red">사용자 중지</span>';
+    } else if (data[i].pf_abort) {
+      tmp += '<span style="color:red">PF 중지</span>';
+    } else if (data[i].etc_abort > 0) {
+      //str += '<span style="color:red">기타</span>';
+      tmp += '<span style="color:red">';
+      if (data[i].etc_abort == 1) {
+        tmp += 'FFMPEG 시작 에러';
+      } else if (data[i].etc_abort == 2) {
+        tmp += 'FFMPEG 시작 타임오버';
+      } else if (data[i].etc_abort == 3) {
+        tmp += 'FFMPEG 강제 중지';
+      } else if (data[i].etc_abort == 4) {
+        tmp += 'FFMPEG HTTP FORBIDDEN';
+      } else if (data[i].etc_abort == 8) {
+        tmp += '퀵VOD 방송중';
+      } else if (data[i].etc_abort == 9) {
+        tmp += 'Retry too many(20)';
+      } else if (data[i].etc_abort == 21) {
+        tmp += 'many retry';
+      } else if (data[i].etc_abort == 11) {
+        tmp += '패스 - QVOD';
+      } else if (data[i].etc_abort == 12) {
+        tmp += '패스 - 제외 채널';
+      } else if (data[i].etc_abort == 13) {
+        tmp += '패스 - 제외 프로그램';
+      } else if (data[i].etc_abort == 14) {
+        tmp += '화이트리스트 제외';
+      } else if (data[i].etc_abort == 15) {
+        tmp += '에피소드 제외 episodenumber';
+      } else if (data[i].etc_abort == 16) {
+        tmp += '에피소드 제외 episodetitle';
+      } else if (data[i].etc_abort == 7) {
+        tmp += '권한 없음';
+      } else if (data[i].etc_abort == 6) {
+        tmp += '화질 없음';
+      } else if (data[i].etc_abort == 5) {
+        tmp += '2160p 대기';
+      } else if (data[i].etc_abort == 0) {
+        tmp += '처리중';
+      } else {
+        tmp += '다운로드중';
+      }
+      tmp += '</span>';
+    }
+    tmp += '<br>';
+    if (data[i].duration != null) {
+      tmp += '<strong>길이</strong> : ' + duration_str(data[i].duration) + '&nbsp;&nbsp;';
+    }
+    if (data[i].filesize_str != null) {
+      tmp += '<strong>파일크기</strong> : ' + data[i].filesize_str+ '&nbsp;&nbsp;';;
+    }
+    if (data[i].download_speed != null) {
+      tmp += '<strong>다운속도</strong> : ' + data[i].download_speed+ '&nbsp;&nbsp;';;
+    }
+    tmp += '<br>' 
+    if (data[i].end_time != '' && data[i].end_time != null) {
+      tmp += '<strong>완료시간</strong> : ' + data[i].end_time + ' (' + data[i].download_time+'초)'
+    }
+    
+    tmp2 = j_button('basic_search', '에피소드 검색', {'code':data[i].contentid});
+    tmp2 += j_button('program_search_on_program_btn', '프로그램 검색', {'code':data[i].programid});
+    tmp2 += j_button('json_btn', 'JSON', {'idx':i});
+    tmp2 += j_button('program_search_btn', '목록 검색', {'program':data[i].programtitle});
+    tmp2 += j_button('except_channel_btn', '제외채널', {'channel':data[i].channelname});
+    tmp2 += j_button('except_program_btn', '제외프로그램', {'program':data[i].programtitle});
+    tmp2 += j_button('whitelist_program_btn', '포함프로그램', {'program':data[i].programtitle});
+    tmp += j_button_group(tmp2)
+    str += j_col(9, tmp)
+    str += j_row_end();
+    if (i != data.length -1) str += j_hr(0);
+  }
+  if (str == '') str = "<h4>목록이 없습니다.</h4>";
+  $("#list").html(str);
+}
+
+</script>    
+{% endblock %}
+

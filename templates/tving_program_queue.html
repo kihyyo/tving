@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block content %}
+
+{{ macros.m_button_group([['reset_btn', '초기화'], ['delete_completed_btn', '완료 목록 삭제'], ['globalLinkBtn', 'Go FFMPEG', [['url','/ffmpeg/download/list']]], ['globalLinkBtn', 'Go aria2c 다운로드', [['url','/wv_tool/download/list']]], ['globalLinkBtn', 'Go RE 다운로드', [['url','/RE_tool/download/list']]] ])}}
+{{ macros.m_row_start('0') }}
+{{ macros.m_row_end() }}
+
+{{ macros.m_hr_head_top() }}
+{{ macros.m_row_start('0') }}
+{{ macros.m_col(1,  macros.m_strong('Idx')) }}
+{{ macros.m_col(2,  macros.m_strong('CreatedTime')) }}
+{{ macros.m_col(1,  macros.m_strong('Quality')) }}
+{{ macros.m_col(3,  macros.m_strong('Title')) }}
+{{ macros.m_col(4,  macros.m_strong('Status')) }}
+{{ macros.m_col(1,  macros.m_strong('Action')) }}
+{{ macros.m_row_end() }}
+{{ macros.m_hr_head_bottom() }}
+<div id="list_div"></div>
+
+
+<script type="text/javascript">
+
+$(document).ready(function(){
+  var socket = io.connect(window.location.href);
+
+  socket.on('start', function(data){});
+
+  socket.on('status', function(data){
+    str = make_item(data);
+    $('#item_' + data.id).html(str);
+
+  });
+  refresh();
+});
+
+
+function refresh() {
+  globalSendCommand('queue_list', null, null, null, function(data) {
+    current_data = data;
+    $("#list_div").html('');
+    if (data.length == 0) {
+      str = "<tr><td colspan='10'><h4>작업이 없습니다.</h4><td><tr>";
+    } else {
+      str = ''
+      for(i in data) {
+        str += '<div id="item_' + data[i].id + '">';
+        str += make_item(data[i]);
+        str += '</div>';
+        if (i != data.length -1) str += j_hr(0);
+      }
+    }
+    $("#list_div").html(str);
+  });
+}
+
+
+function make_item(data) {
+  str = '';
+  str += j_row_start();
+  str += j_col(1, data.id);
+  str += j_col(2, data.queue_created_time);
+  str += j_col(1, data.quality);
+  if (data.contents_json != null) {
+    tmp = data.program_title + ' '  + data.episode_number + '회'
+    str += j_col(3, tmp);
+    label = data.ffmpeg_status_kor;
+    if (data.ffmpeg_percent != 0) {
+      label += '(' + data.ffmpeg_percent + '%)'
+    }
+    tmp = j_progress('progress_'+data.id, data.ffmpeg_percent,  label)
+    str += j_col(4, tmp);
+  } else {
+    str += j_col(4, data.episode_code);
+    str += j_col(3, "대기중");
+  }
+  div = '<div id="button_' + data.id + '">';
+  tmp = '';
+  if ( data.is_downloading ) {
+    tmp = j_button('program_cancel_btn', '취소', {'id':data.id}, 'primary', true, true);
+    tmp = j_button_group(tmp);
+  }
+  div += tmp + "</div>";
+  str += j_col(1, div);
+  str += j_row_end();
+  return str;
+}
+
+$("body").on('click', '#program_cancel_btn', function(e){
+  e.preventDefault();
+  globalSendCommand('queue_command', 'cancel', $(this).data('id'));
+});
+
+$("body").on('click', '#reset_btn', function(e){
+  e.preventDefault();
+  globalSendCommand('queue_command', 'reset', null, null, function(ret){
+    refresh();
+  });
+});
+
+$("body").on('click', '#delete_completed_btn', function(e){
+  e.preventDefault();
+  globalSendCommand('queue_command', 'delete_completed', null, null, function(ret){
+    refresh();
+  });
+});
+
+
+</script>    
+{% endblock %}

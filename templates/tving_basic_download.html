@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+{% block content %}
+<form>
+  {{ macros.setting_input_text_and_buttons('url', 'URL or Code', [['analyze_btn', '분석'], ['globalOpenBtn', '티빙', [['url','https://www.tving.com/index.html']] ]], value=arg['basic_recent_code'], desc='URL & Program Code & Episode Code & Movie Code') }}
+</form>
+<div id='detail'></div>
+<div id="more"></div>
+
+<script type="text/javascript">
+
+$(document).ready(function(){
+  if ( "{{arg['code']}}" != "None" && "{{arg['code']}}" != "" ) {
+    $("#url").val("{{arg['code']}}");
+    $("#analyze_btn").click();
+  }
+});
+
+
+$("body").on('click', '#analyze_btn', function(e) {
+  e.preventDefault();
+  if ($("#url").val() == "") {
+    $.notify('<strong>URL이나 Code를 입력하세요.</strong>', {
+      type: 'warning'
+    });
+    return;
+  }
+  globalSendCommand('analyze', $("#url").val(), null, null, function(ret){
+    make_analyse_result(ret);
+  });
+});
+
+
+// 에피소드 서치
+$("body").on('click', '.episode_search_btn', function(e){
+  e.preventDefault();
+  let episode = $(this).data('episode');
+  $("#url").val(episode);
+  $("#analyze_btn").click();
+});
+
+
+
+//에피소드 다운로드 시작
+$("body").on('click', '#download_start_btn', function(e){
+  e.preventDefault();
+  globalSendCommand('download_start', $(this).data('url'), $(this).data('filename'), $(this).data('action'));
+});
+
+
+// 프로그램 서치
+$("body").on('click', '#program_search_btn', function(e){
+  e.preventDefault();
+  $("#url").val($(this).data('code'));
+  $("#analyze_btn").click();
+});
+
+
+// 프로그램 More 버튼
+$("body").on('click', '#more_btn', function(e){
+  e.preventDefault();
+  code = current_data.code;
+  page = parseInt($(this).data('page')) + 1;
+  globalSendCommand('program_page', code, page, null, function(ret){
+    make_program_page(ret);
+  });
+});
+
+$("body").on('change', '#select_quality', function(e){
+  e.preventDefault();
+  globalSendCommand('analyze', $("#url").val(), $('#select_quality').val(), null, function(ret){
+    make_analyse_result(ret);
+  });
+});
+
+
+function make_program_page(ret) {
+  data = ret.data.result
+  str = '';
+  for (i in data) {
+    str += '<hr>';
+    str += '<div class="row">';
+    str += '<div class="col-sm-3">'
+    if ( data[i].episode.image[0] != null) {
+      img_url = data[i].episode.image[0].url;
+    } else {
+      img_idx = data[i].program.image.findIndex((item, idx) => {
+        return item.code === 'CAIP1500';
+        //return item.code.slice(-4) === '1500';
+      });
+      img_url = data[i].program.image[img_idx].url;
+      str += '<span class="program-item__image-tag tag-quickup">Quick VOD</span>';
+    }
+    str += '<img src="http://image.tving.com/crop_cdn.php?u=http://image.tving.com' + img_url + '&w=210" class="img-fluid">';
+    str += '</div>';
+    str += '<div class="col-sm-9">'
+    str += '<div>';
+    str += '<strong>' + data[i].vod_name.ko+ '</strong>';
+    str += '<br>';
+    str += data[i].episode.broadcast_date + '<br><p></p>';
+    if ( data[i].episode.synopsis.ko != null) 
+      str += '<p>' + data[i].episode.synopsis.ko.replace('\n', '<br>') + '</p>';
+    str += '</div>';
+    str += '<div>';
+    str += '<button class="episode_search_btn btn btn-sm btn-outline-success" data-episode="'+data[i].episode.code + '">에피소드</button>';
+    str += '</div>';
+    str += '</div>';
+    str += '</div>';
+  }
+  if (ret.page == '1') {
+    document.getElementById("detail").innerHTML = str;
+  } else {
+    document.getElementById("detail").innerHTML += str;
+  }
+  
+  if (ret.data.has_more == 'Y') {
+    str = '<div class="d-inline-block"></div><form>';
+    str += '<button id="more_btn" class="btn btn-outline-secondary btn-lg btn-block" type="button" data-code="'+ret.code+'" data-page="'+ret.page+'">More</button>'
+    str += '</form>';
+    document.getElementById("more").innerHTML = str;
+  } else {
+    document.getElementById("more").innerHTML = '';
+  }
+}
+
+function make_analyse_result(data) {
+  if (data == null) {
+    $.notify('<strong>티빙에서 정보를 가져올 수 없습니다.<br>잠시 후 이용하세요.</strong>', {
+      type: 'warning'
+    });
+    return
+  }
+  current_data = data
+  if (data['url_type'] == 'None') {
+  } else if (data['url_type'] == 'episode') {
+    str = j_row_start();
+    tmp = '<img src="http://image.tving.com' + data.data.content.info.episode.image[0].url + '" class="img-fluid">'
+    str += j_col(3, tmp)
+    tmp = '<strong>' + data.data.content.program_name + '  ' + data.data.content.frequency + '회</strong><br>';
+    tmp += data.data.content.info.episode.broadcast_date + '  ' + '<br><p>';
+    tmp += '<p>' + data.data.content.info.episode.synopsis.ko.replace('\n', '<br>') + '<p>';
+    tmp += '파일명 : ' + data.data.filename + '<br>';
+    if (data.available.action == 'dash') {
+    tmp += " (" + text_color('DRM') + ")";  
+    }
+    tmp += "<br><br>";
+    if (data.available.preview) {
+      tmp += '다운로드 권한 없음<br><br>';
+      tmp2 = ''
+    } else {
+      tmp2 = '<div class="form-inline">'
+      tmp2 += '화질선택&nbsp;&nbsp;&nbsp;&nbsp;<select id="select_quality" name="select_quality" class="form-control form-control-sm">'
+      for (const quality of data.data.qualities) {
+        tmp2 += '<option value="' + quality + '" ' + (quality === data.available.current_quality ? 'selected' : '') + '>' + quality + '</option>';}
+      tmp2 += `</select>&nbsp;&nbsp;&nbsp;&nbsp;`
+      tmp2 += '</div>'
+      tmp2 += j_button('download_start_btn', '다운로드', {'filename':data.data.filename, 'url':data.data.broad_url, 'action':data.available.action})}
+    tmp2 += j_button('program_search_btn', '프로그램 검색', {'code':data.data.content.program_code});
+    tmp += j_button_group(tmp2);
+    str += j_col(9, tmp);
+    str += j_row_end();
+    document.getElementById("detail").innerHTML = str;
+    document.getElementById("more").innerHTML = '';
+  } else if (data['url_type'] == 'program') {
+    make_program_page(data);
+  } else if (data['url_type'] == 'movie') {
+    str = j_row_start();
+    tmp = '<img src="http://image.tving.com' + data.data.content.info.movie.image[0].url + '" class="img-fluid">'
+    str += j_col(3, tmp)
+    tmp = '<strong>' + data.data.content.info.movie.name.ko + '</strong><br>';
+    //tmp += data.data.content.info.episode.broadcast_date + '<br>';
+    if ( data.data.content.info.movie.story.ko != null)
+      tmp += '<p>' + data.data.content.info.movie.story.ko.replace('\n', '<br>') + '<p>';
+    tmp += '파일명 : ' + data.data.filename;
+    if (data.available.action == 'dash') {
+      tmp += " (" + text_color('DRM') + ")";  
+    }
+    tmp += "<br><br>";
+    if (data.available.preview) {
+      tmp += '다운로드 권한 없음<br><br>';
+      tmp2 = ''
+    } else {
+      tmp2 = '<div class="form-inline">'
+      tmp2 += '화질선택&nbsp;&nbsp;&nbsp;&nbsp;<select id="select_quality" name="select_quality" class="form-control form-control-sm">'
+      for (const quality of data.data.qualities) {
+        tmp2 += '<option value="' + quality + '" ' + (quality === data.available.current_quality ? 'selected' : '') + '>' + quality + '</option>';}
+      tmp2 += `</select>&nbsp;&nbsp;&nbsp;&nbsp;`
+      tmp2 += '</div>'
+      tmp2 += j_button('download_start_btn', '다운로드', {'filename':data.data.filename, 'url':data.data.broad_url, 'action':data.available.action})
+    }
+    tmp += j_button_group(tmp2)
+    str += j_col(9, tmp)
+    str += j_row_end();
+    document.getElementById("detail").innerHTML = str;
+    document.getElementById("more").innerHTML = '';
+    }
+}
+  
+  
+
+
+</script>    
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

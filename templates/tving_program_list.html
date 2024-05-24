@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block content %}
+
+{{ macros.m_button_group([['globalDbDeleteBtn', '다운로드 목록 DB 초기화'], ['db_remove_completed_btn', '완료제거'], ['db_remove_incomplete_btn', '미완료제거'], ['db_add_incomplete_btn', '미완료 추가']])}}
+<div class="d-inline-block"></div>
+
+{{ macros.m_row_start('5') }}
+{{ macros.m_row_end() }}
+
+<form id="form_search" class="form-inline" style="text-align:left">
+  <div class="container-fluid">
+    <div class="row show-grid">
+      <span class="col-md-4">
+        <select id="order" name="order" class="form-control form-control-sm">
+          <option value="desc">최근순</option>
+          <option value="asc">오래된순</option>
+        </select>
+        <select id="option1" name="option1" class="form-control form-control-sm">
+          <option value="all">전체</option>
+          <option value="completed">완료</option>
+          <option value="failed">미완료</option>
+        </select>
+      </span>
+      <span class="col-md-8">
+        <input id="keyword" name="keyword" class="form-control form-control-sm w-50" type="text" placeholder="" aria-label="Search">
+        {{ macros.m_button_group([['globalSearchSearchBtn', '검색'], ['globalSearchResetBtn', '리셋']])}}
+      </span>
+    </div>
+  </div>
+</form>
+<div id='page1'></div>
+{{ macros.m_hr_head_top() }}
+{{ macros.m_row_start('0') }}
+{{ macros.m_col(2,  macros.m_strong('Idx')) }}
+{{ macros.m_col(6,  macros.m_strong('Item')) }}
+{{ macros.m_col(2,  macros.m_strong('Status')) }}
+{{ macros.m_row_end() }}
+{{ macros.m_hr_head_bottom() }}
+<div id="list"></div>
+<div id='page2'></div>
+
+
+<script type="text/javascript">
+var last_list_option = "{{arg['tving_program_last_list_option']}}";
+
+$(document).ready(function(){
+  tmp = last_list_option.split('|');
+  if (tmp.length == 5) {
+    $("#order").val(tmp[0]);
+    $("#keyword").val(tmp[2]);
+    $("#option1").val(tmp[3]);
+    //document.getElementById("option2").value = tmp[4];
+    globalRequestSearch(tmp[1]);
+  } else {
+    globalRequestSearch('1');
+  }
+});
+
+$('body').on('click', '#db_remove_completed_btn', (e) => {
+  e.preventDefault();
+  globalSendCommand("program_list_command", "remove_completed");
+  globalRequestSearch('1');
+});
+
+$('body').on('click', '#db_remove_incomplete_btn', (e) => {
+  e.preventDefault();
+  globalSendCommand("program_list_command", "remove_incomplete");
+  globalRequestSearch('1');
+});
+
+$('body').on('click', '#db_add_incomplete_btn', (e) => {
+  e.preventDefault();
+  globalSendCommand("program_list_command", "add_incomplete");
+  globalRequestSearch(current_page);
+});
+
+$("body").on('click', '#remove_btn', function(e) {
+  e.preventDefault();
+  globalSendCommand("program_list_command", "remove_one", $(this).data('db_id'));
+  globalRequestSearch(current_page);
+});
+
+$('body').on('click', '#request_btn', (e) => {
+  e.preventDefault();
+  let prog_id = e.target.dataset.program_id;   
+  if (prog_id) {
+      window.location = `/tving/program/select?code=${prog_id}`;
+  }
+});
+
+$('body').on('mouseover', '.head_pic', (e)=>{
+  e.target.nextElementSibling.classList.remove('before');
+  e.target.nextElementSibling.classList.add('after');
+});
+
+$('body').on('mouseout', '.head_pic', (e)=>{
+  e.target.nextElementSibling.classList.remove('after');
+  e.target.nextElementSibling.classList.add('before');
+});
+
+const make_list = (data) => {
+  let str = '';
+  let tmp = '';
+  for (i in data) {
+    str += j_row_start();
+    str += j_col(1, data[i].id);
+
+    tmp = '';
+    if(data[i].programimage == null || data[i].programimage == undefined || data[i].programimage.length <= 0){
+      tmp = ''
+    }else{
+      tmp = `<div><img src="https://image.tving.com${data[i].programimage}" class="img-fluid thumbnail head_pic" >
+             <img src="https://image.tving.com${data[i].thumbnail}" class="img-fluid thumbnail before"></div>`
+    }
+    str += j_col(3, tmp);
+
+    tmp = '';
+    if(data[i].program_title == null || data[i].program_title == undefined || data[i].program_title.length <= 0){
+      tmp = data[i].episode_code;
+    }else{
+      tmp = `${data[i].program_title} - ${data[i].episode_number}`
+    }
+    str += j_col(6, `${tmp}<br>
+                     ${data[i].quality}<br><br>
+                     ${j_button('request_btn', '프로그램 검색', 
+                      {'program_id':data[i].program_id})}
+                     ${j_button('remove_btn', '항목 삭제', 
+                      {'db_id':data[i].id})}
+                     `);
+
+    str += j_col(2, `${data[i].created_time.length > 0 ? data[i].created_time + ' (추가)' : ''}
+                     ${data[i].completed ? '<br>' + data[i].completed_time + ' (완료)' : '' }`);
+    str += j_row_end();
+    if (i != data.length -1) str += j_hr();
+  }
+  if (str == '') str = "<h4>목록이 없습니다.</h4>";
+  $("#list").html(str);
+}
+</script>    
+
+<style>
+  .thumbnail{
+    height: 100px;
+    border: 1px solid gray;
+  }
+
+  .head_pic{
+    display: inline;
+  }
+
+  .before{
+    display: none;
+  }
+
+  .after{
+    position: absolute;
+    display: inline;
+    left: 150px;
+    top: 20px;
+    z-index: 1;
+  }
+</style>
+{% endblock %}

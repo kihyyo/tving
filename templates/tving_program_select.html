@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+{% block content %}
+
+<form id='program_list'>
+{{ macros.setting_input_text_and_buttons('url', 'URL or Code', [['analyze_btn', '분석'], ['globalOpenBtn', '티빙', [['url','https://www.tving.com/index.html']] ]], value=arg['program_recent_code'], desc='URL & Program Code & Episode Code') }}
+</form>
+<form id="program_auto_form">
+<div id='detail1'></div>
+<div id="more"></div>
+<form>
+ 
+
+<script type="text/javascript">
+
+var default_quality = "{{arg['program_quality']}}"
+
+
+$(document).ready(function(){
+  if ( "{{arg['code']}}" != "None" && "{{arg['code']}}" != "" ) {
+    $("#url").val("{{arg['code']}}");
+    $("#analyze_btn").click();
+  } else {
+    globalSendCommand('previous_analyze', null, null, null, function(ret){
+      if (ret.data != null) {
+        make_program_page(ret);
+      }
+    });
+  }
+});
+
+
+$("body").on('click', '#analyze_btn', function(e) {
+  e.preventDefault();
+  if ($("#url").val() == "") {
+    $.notify('<strong>URL이나 Code를 입력하세요.</strong>', {
+      type: 'warning'
+    });
+    return;
+  }
+  globalSendCommand('analyze', $("#url").val(), null, null, function(ret){
+    if (ret.url_type == 'episode') {
+      $("#url").val(ret.data.content.program_code);
+      $("#analyze_btn").click();
+    } else if (ret.url_type == 'program') {
+      make_program_page(ret);
+    } else {
+      notify("프로그램 코드를 입력하세요");
+      return;
+    }
+  });
+});
+
+
+function make_program_page(ret) {
+  qualities = ['2160p', '1080p', '720p', '480p', '360p'];
+  str = '';
+  if (ret.page == '1') {
+    tmp = '<div class="form-inline">'
+    tmp += j_button('check_download_btn', '선택 다운로드 추가');
+    tmp += j_button('all_check_on_btn', '전체 선택');
+    tmp += j_button('all_check_off_btn', '전체 해제');
+    tmp += '&nbsp;&nbsp;&nbsp;&nbsp;<select id="all_quality" name="all_quality" class="form-control form-control-sm">'
+    for (i in qualities) {
+      tmp += '<option value="'+qualities[i]+'" '+((qualities[i]==default_quality)?'selected':'')+'>'+qualities[i]+'</option>'
+    }
+    tmp += `</select>`;
+    tmp += '</div>';
+    tmp += j_button('all_quality_btn', '전체 화질 적용');
+    tmp = j_button_group(tmp);
+    str += tmp;
+  }
+  data = ret.data.result
+  str += '<hr>';
+  for (i in data) {
+    str += j_row_start();
+    tmp = '<img src="http://image.tving.com' + data[i].episode.image[0].url + '/dims/resize/600" class="img-fluid">';
+    str += j_col(3, tmp);
+    tmp = '<strong>' + data[i].program.name.ko+' ' + data[i].episode.frequency + '회</strong><br>';
+    tmp += data[i].vod_name.ko + '<br>';
+    tmp += data[i].episode.broadcast_date + '<br><p></p>';
+
+    tmp += '<div class="form-inline">'
+    tmp += '<input id="checkbox|'+data[i].episode.code+'" name="checkbox|'+data[i].episode.code+'" type="checkbox" checked data-toggle="toggle" data-on="선 택" data-off="-" data-onstyle="success" data-offstyle="danger" data-size="small">&nbsp;&nbsp;&nbsp;&nbsp;';
+ 
+    tmp += '<select id="select|'+data[i].episode.code+'" name="select|'+data[i].episode.code+'" class="form-control form-control-sm">';
+    for (j in qualities) {
+      tmp += '<option value="'+qualities[j]+'" '+((qualities[j]==default_quality)?'selected':'')+'>'+qualities[j]+'</option>';
+    }
+    tmp += `</select>&nbsp;&nbsp;&nbsp;&nbsp;`;
+ 
+    tmp += j_button('insert_download_btn', '다운로드 추가', {'code':data[i].episode.code});
+    // edit by lapis
+    tmp += j_button('force_insert_download_btn', '다운로드 추가(DB무시)', {'code':data[i].episode.code});
+    //
+    
+    //tmp += j_button('quality_list_btn', '지원 화질 확인', {'code':data[i].episode.code});
+    tmp += '</div>';
+
+    str += j_col(9, tmp)
+    str += j_row_end();
+    if (i != data.length -1) str += j_hr(0);
+  }
+
+  str += "<div id='detail"+(parseInt(ret.page)+1)+"'></div>"
+  document.getElementById("detail"+parseInt(ret.page)).innerHTML = str;
+  //if (parseInt(ret.data.pagecount) - (ret.page -1) * 20 + parseInt(ret.data.count) > 0) {
+    if (ret.data.has_more == 'Y') {
+    str = '<div class="d-inline-block"></div><form>';
+    str += '<button id="more_btn" class="btn btn-outline-secondary btn-lg btn-block" type="button" data-code="'+ret.code+'" data-page="'+ret.page+'">More</button>'
+    str += '</form>';
+    document.getElementById("more").innerHTML = str;
+  } else {
+    document.getElementById("more").innerHTML = '';
+  }
+  $('input[id^="checkbox|"]').bootstrapToggle()
+}
+
+$("body").on('click', '#all_check_on_btn', function(e){
+  e.preventDefault();
+  $('input[id^="checkbox|"]').bootstrapToggle('on');
+});
+
+$("body").on('click', '#all_check_off_btn', function(e){
+  e.preventDefault();
+  $('input[id^="checkbox|"]').bootstrapToggle('off');
+});
+
+$("body").on('click', '#all_quality_btn', function(e){
+  e.preventDefault();
+  v = document.getElementById("all_quality").value;
+  tmp = $('select[id^="select|"]');
+  for (i in tmp) {
+    for(j in tmp[i]) {
+      if (tmp[i][j] == null) 
+        break
+      if (v == tmp[i][j].value)  {
+        tmp[i].value = v
+        break
+      }
+    }
+  }
+});
+
+
+// $("body").on('click', '#quality_list_btn', function(e){
+//   e.preventDefault();
+//   code = $(this).data('program')('code');
+//   globalSendCommand('get_contents', code, null, null, function(data){
+//     if (data != null) {
+//       qualities  = data['qualities']
+//       str = ''
+//       for (i = 0; i < qualities.length; i++) {
+//         str += '화질 : ' + qualities[i] + '<br>';
+//       }
+//       showModal(str, "지원화질", false);
+//     } else {
+//       notify('정보 확인 실패.<br>잠시 후 다시 확인하세요', 'warning');
+//     }
+//   });
+// });
+
+
+// 프로그램 More 버튼
+$("body").on('click', '#more_btn', function(e){
+  e.preventDefault();
+  //code = current_data.code;
+  page = parseInt($(this).data('page')) + 1;
+  globalSendCommand('program_page', $(this).data('code'), page, null, function(ret){
+  make_program_page(ret);
+  });
+});
+
+
+// 하나씩 다운로드 추가
+$("body").on('click', '#insert_download_btn', function(e){
+  e.preventDefault();
+  code = $(this).data('code');
+  quality = document.getElementById('select|'+code).value;
+  globalSendCommand("download_program", code, quality, false);
+});
+
+
+$("body").on('click', '#force_insert_download_btn', function(e){
+  e.preventDefault();
+  code = $(this).data('code');
+  quality = document.getElementById('select|'+code).value;
+  globalSendCommand("download_program", code, quality, true);
+});
+
+
+$("body").on('click', '#check_download_btn', function(e){
+  e.preventDefault();
+  all = $('input[id^="checkbox|"]');
+  str = "";
+  for (i in all) {
+    if (all[i].checked){
+      code = all[i].id.split('|')[1];
+      quality = document.getElementById('select|'+code).value;
+      str += code+"|"+quality+",";
+    }
+  }
+  if (str == "") {
+    notify('선택하세요.', 'warning');
+    return;
+  }
+  globalSendCommand("download_program_check", str);
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</script>    
+{% endblock %}
