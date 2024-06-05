@@ -47,10 +47,12 @@
 
 {{ macros.m_tab_content_start('blacklist', false) }}
   {{ macros.setting_input_textarea('recent_except_channel', '제외 채널', value=arg['recent_except_channel'], desc=['채널 이름과 일치하면 제외합니다.', ', 또는 Enter로 구분']) }}
+  {{ macros.setting_input_textarea('recent_except_category', '제외 장르', value=arg['recent_except_category'], desc=['장르 이름과 일치하면 제외합니다.', ', 또는 Enter로 구분']) }}
   {{ macros.setting_input_textarea('recent_except_program', '제외 프로그램', value=arg['recent_except_program'], desc=['이 곳에 있는 항목이 프로그램에 이름에 포함되어 있으면 제외합니다.', ', 또는 Enter로 구분']) }}
 {{ macros.m_tab_content_end() }} 
 
 {{ macros.m_tab_content_start('whitelist', false) }}
+  {{ macros.setting_input_textarea('recent_whitelist_category', '포함 장르', value=arg['recent_whitelist_category'], desc=['이 곳에 있는 항목이 장르가 포함되어 있으면 다운로드합니다.', ', 또는 Enter로 구분']) }}
   {{ macros.setting_input_textarea('recent_whitelist_program', '포함 프로그램', value=arg['recent_whitelist_program'], desc=['이 곳에 있는 항목이 프로그램에 이름에 포함되어 있으면 다운로드합니다.', ', 또는 Enter로 구분']) }}
   {{ macros.setting_checkbox('recent_whitelist_first_episode_download', '첫회 받기', value=arg['recent_whitelist_first_episode_download'], desc='On : 포함 프로그램에 방송이 없어도 첫 에피소드를 다운로드합니다.') }}
 {{ macros.m_tab_content_end() }} 
