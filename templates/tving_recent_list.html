@@ -89,9 +89,20 @@ $("body").on('click', '#except_channel_btn', function(e){
   add_condition('recent_except_channel', $(this).data('channel'))
 });
 
+$("body").on('click', '#except_category_btn', function(e){
+  e.preventDefault();
+  add_condition('recent_except_category', $(this).data('category'))
+});
+
+
 $("body").on('click', '#except_program_btn', function(e){
   e.preventDefault();
   add_condition('recent_except_program', $(this).data('program'))
+});
+
+$("body").on('click', '#whitelist_category_btn', function(e){
+  e.preventDefault();
+  add_condition('recent_whitelist_category', $(this).data('category'))
 });
 
 $("body").on('click', '#whitelist_program_btn', function(e){
@@ -118,6 +129,7 @@ function make_list(ret) {
     tmp += ' (' + data[i].releasedate + ')'
     tmp += ' / ' + data[i].channelname
     tmp += ' / ' + data[i].quality
+   
     if (data[i].vod_type == 'onair') {
       tmp += ' ' + '<span style="color:red">퀵VOD</span>'
     }
@@ -131,6 +143,8 @@ function make_list(ret) {
 
     tmp += '<br>';
     tmp += '<strong>에피소드 번호 / 제목</strong> : ' + data[i].episodenumber + ' / ' + data[i].episodetitle;
+    tmp += '<br>';
+    tmp += '<strong>장르</strong> : ' + data[i].category1_name;
     tmp += '<br>';
     
     tmp += '<strong>상태</strong> : ' 
@@ -169,6 +183,8 @@ function make_list(ret) {
         tmp += '에피소드 제외 episodenumber';
       } else if (data[i].etc_abort == 16) {
         tmp += '에피소드 제외 episodetitle';
+      } else if (data[i].etc_abort == 17) {
+        tmp += '패스 - 제외 장르';  
       } else if (data[i].etc_abort == 7) {
         tmp += '권한 없음';
       } else if (data[i].etc_abort == 6) {
@@ -202,7 +218,9 @@ function make_list(ret) {
     tmp2 += j_button('json_btn', 'JSON', {'idx':i});
     tmp2 += j_button('program_search_btn', '목록 검색', {'program':data[i].programtitle});
     tmp2 += j_button('except_channel_btn', '제외채널', {'channel':data[i].channelname});
+    tmp2 += j_button('except_category_btn', '제외장르', {'category':data[i].category1_name});
     tmp2 += j_button('except_program_btn', '제외프로그램', {'program':data[i].programtitle});
+    tmp2 += j_button('whitelist_category_btn', '포함장르', {'category':data[i].category1_name});
     tmp2 += j_button('whitelist_program_btn', '포함프로그램', {'program':data[i].programtitle});
     tmp += j_button_group(tmp2)
     str += j_col(9, tmp)
