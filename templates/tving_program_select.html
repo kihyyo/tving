@@ -73,7 +73,12 @@ function make_program_page(ret) {
   str += '<hr>';
   for (i in data) {
     str += j_row_start();
-    tmp = '<img src="http://image.tving.com' + data[i].episode.image[0].url + '/dims/resize/600" class="img-fluid">';
+    let imageUrl = data[i].episode.image && data[i].episode.image.length > 0 
+        ? data[i].episode.image[0].url 
+        : (data[i].program.image && data[i].program.image.length > 0 
+            ? data[i].program.image[0].url 
+            : '/default-image.jpg'); 
+    tmp = '<img src="http://image.tving.com' + imageUrl + '/dims/resize/600" class="img-fluid">';
     str += j_col(3, tmp);
     tmp = '<strong>' + data[i].program.name.ko+' ' + data[i].episode.frequency + '회</strong><br>';
     tmp += data[i].vod_name.ko + '<br>';
