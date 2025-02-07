@@ -133,13 +133,13 @@ function make_analyse_result(data) {
   if (data['url_type'] == 'None') {
   } else if (data['url_type'] == 'episode') {
     str = j_row_start();
-    tmp = '<img src="http://image.tving.com' + data.data.content.info.episode.image[0].url + '" class="img-fluid">'
+    tmp = '<img src="http://image.tving.com' + data.data.content.image[0].url + '" class="img-fluid">'
     str += j_col(3, tmp)
-    tmp = '<strong>' + data.data.content.program_name + '  ' + data.data.content.frequency + '회</strong><br>';
-    tmp += data.data.content.info.episode.broadcast_date + '  ' + '<br><p>';
-    tmp += '<p>' + data.data.content.info.episode.synopsis.ko.replace('\n', '<br>') + '<p>';
-    tmp += '파일명 : ' + data.data.filename + '<br>';
-    if (data.available.action == 'dash') {
+    tmp = '<strong>' + data.data.content.title + '  ' + data.data.content.frequency + '회</strong><br>';
+    tmp += data.data.content.episode_broad_dt + '  ' + '<br><p>';
+    tmp += '<p>' + data.data.content.episode_synopsis.replace('\n', '<br>') + '<p>';
+     tmp += '파일명 : ' + data.data.filename + '<br>';
+    if (data.data.stream.drm_yn == 'Y') {
     tmp += " (" + text_color('DRM') + ")";  
     }
     tmp += "<br><br>";
@@ -164,14 +164,14 @@ function make_analyse_result(data) {
     make_program_page(data);
   } else if (data['url_type'] == 'movie') {
     str = j_row_start();
-    tmp = '<img src="http://image.tving.com' + data.data.content.info.movie.image[0].url + '" class="img-fluid">'
+    tmp = '<img src="http://image.tving.com' + data.data.content.image[0].url + '" class="img-fluid">'
     str += j_col(3, tmp)
-    tmp = '<strong>' + data.data.content.info.movie.name.ko + '</strong><br>';
+    tmp = '<strong>' + data.data.content.title + '</strong><br>';
     //tmp += data.data.content.info.episode.broadcast_date + '<br>';
-    if ( data.data.content.info.movie.story.ko != null)
-      tmp += '<p>' + data.data.content.info.movie.story.ko.replace('\n', '<br>') + '<p>';
+    if ( data.data.content.synopsis != null)
+      tmp += '<p>' + data.data.content.synopsis.replace('\n', '<br>') + '<p>';
     tmp += '파일명 : ' + data.data.filename;
-    if (data.available.action == 'dash') {
+    if (data.data.stream.drm_yn == 'Y') {
       tmp += " (" + text_color('DRM') + ")";  
     }
     tmp += "<br><br>";
@@ -200,71 +200,4 @@ function make_analyse_result(data) {
 
 </script>    
 {% endblock %}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
