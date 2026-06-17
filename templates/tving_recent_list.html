@@ -21,6 +21,10 @@
           <option value="etc_abort_13">패스 - 제외 프로그램</option>
           <option value="etc_abort_14">화이트리스트 제외</option>
           <option value="etc_abort_15">에피소드 제외</option>
+          <option value="etc_abort_5">2160p 대기</option>
+          <option value="etc_abort_33">갱신 실패</option>
+          <option value="etc_abort_34">다운로드 오류</option>
+          <option value="etc_abort_9">너무 많은 시도</option>
         </select>
       </span>
       <span class="col-md-8">
@@ -108,6 +112,31 @@ $("body").on('click', '#whitelist_category_btn', function(e){
 $("body").on('click', '#whitelist_program_btn', function(e){
   e.preventDefault();
   add_condition('recent_whitelist_program', $(this).data('program'))
+});
+
+$("body").on('click', '#retrieve_btn', function(e){
+  e.preventDefault();
+  globalSendCommand('retrieve', $(this).data('id'));
+  tmp = last_list_option.split('|');
+  globalRequestSearch(tmp[1]);
+});
+$("body").on('click', '#delete_btn', function(e){
+  e.preventDefault();
+  db_id = $(this).data('id');
+  globalConfirmModal('삭제하시겠습니까?', 'ID: ' + db_id, function() {
+    globalSendCommand('delete', db_id);
+    tmp = last_list_option.split('|');
+    globalRequestSearch(tmp[1]);
+  });
+});
+$("body").on('click', '#reset_status_btn', function(e){
+  e.preventDefault();
+  db_id = $(this).data('id');
+  globalConfirmModal('초기화하시겠습니까?', 'ID: ' + db_id, function() {
+    globalSendCommand('reset_status', db_id);
+    tmp = last_list_option.split('|');
+    globalRequestSearch(tmp[1]);
+  });
 });
 ///////////////////////
 
@@ -199,6 +228,11 @@ function make_list(ret) {
       tmp += '</span>';
     }
     tmp += '<br>';
+    // 재시도 횟수: 실패 상태이고 1회 이상일 때만 표시
+    if (!data[i].completed && data[i].retry > 0) {
+      tmp += '<strong>재시도</strong> : ' + data[i].retry;
+      tmp += '<br>';
+    }
     if (data[i].duration != null) {
       tmp += '<strong>길이</strong> : ' + duration_str(data[i].duration) + '&nbsp;&nbsp;';
     }
@@ -217,11 +251,14 @@ function make_list(ret) {
     tmp2 += j_button('program_search_on_program_btn', '프로그램 검색', {'code':data[i].programid});
     tmp2 += j_button('json_btn', 'JSON', {'idx':i});
     tmp2 += j_button('program_search_btn', '목록 검색', {'program':data[i].programtitle});
-    tmp2 += j_button('except_channel_btn', '제외채널', {'channel':data[i].channelname});
-    tmp2 += j_button('except_category_btn', '제외장르', {'category':data[i].category1_name});
-    tmp2 += j_button('except_program_btn', '제외프로그램', {'program':data[i].programtitle});
-    tmp2 += j_button('whitelist_category_btn', '포함장르', {'category':data[i].category1_name});
-    tmp2 += j_button('whitelist_program_btn', '포함프로그램', {'program':data[i].programtitle});
+    tmp2 += j_button('except_channel_btn', '제외채널', {'channel':data[i].channelname}, 'warning');
+    tmp2 += j_button('except_category_btn', '제외장르', {'category':data[i].category1_name}, 'warning');
+    tmp2 += j_button('except_program_btn', '제외프로그램', {'program':data[i].programtitle}, 'warning');
+    tmp2 += j_button('whitelist_category_btn', '포함장르', {'category':data[i].category1_name}, 'success');
+    tmp2 += j_button('whitelist_program_btn', '포함프로그램', {'program':data[i].programtitle}, 'success');
+    tmp2 += j_button('retrieve_btn', '갱신', {'id':data[i].id}, 'info');
+    tmp2 += j_button('reset_status_btn', '초기화', {'id':data[i].id}, 'warning');
+    tmp2 += j_button('delete_btn', '삭제', {'id':data[i].id}, 'danger');
     tmp += j_button_group(tmp2)
     str += j_col(9, tmp)
     str += j_row_end();
