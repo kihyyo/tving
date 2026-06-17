@@ -23,12 +23,15 @@
 <div class="tab-content" id="nav-tabContent">
 {{ macros.m_tab_content_start('normal', true) }}
   {{ macros.setting_input_text('recent_save_path', '저장 폴더', value=arg['recent_save_path'], col='9', desc=['절대경로 혹은 {PATH_DATA}/download 와 같은 데이터 폴더 기준 상대 경로']) }}
+  {{ macros.setting_input_text('recent_genre_base_path', '장르 분류 폴더', value=arg['recent_genre_base_path'], col='9', desc=['"분류할 장르"에 해당하면 이 폴더의 하위에 장르 폴더를 생성하여 저장']) }}
+  {{ macros.setting_input_text('recent_genre_path_targets', '분류할 장르', value=arg['recent_genre_path_targets'], col='9', desc=['"장르 분류 폴더"에 저장할 장르 목록', ', 로 구분', '드라마,예능,해외시리즈,애니메이션,스포츠,키즈,시사교양']) }}
   {{ macros.setting_select('recent_quality', '기본 화질', [['2160p', '2160p'], ['1080p', '1080p'], ['720p', '720p'], ['480p', '480p'], ['360p', '360p']], col='3', value=arg['recent_quality']) }}
-  {{ macros.setting_input_int('recent_page_count', '탐색 페이지수', value=arg['recent_page_count'], min='1', placeholder='2') }}
+  {{ macros.setting_input_text('recent_recent_keywords', '최신 방송 검색 키워드', value=arg['recent_recent_keywords'], col='9', desc=['쉼표로 구분. 키워드별로 티빙 검색 결과에서 신규 에피소드를 수집합니다.', '기본: 드라마,예능,교양,다큐멘터리,시사,애니메이션']) }}
+  {{ macros.setting_input_int('recent_recent_days', '최신 방송 기간 (일)', value=arg['recent_recent_days'], min='1', placeholder='2', desc=['방송일 기준으로 며칠 이내의 에피소드를 수집할지 설정합니다.', '2: 오늘 포함 이틀간 방송된 에피소드']) }}
   {{ macros.setting_input_int('recent_ffmpeg_max_count', '동시 다운로드 수', value=arg['recent_ffmpeg_max_count'], desc='동시에 다운로드 할 에피소드 갯수입니다.') }}
+  {{ macros.setting_input_text('recent_subtitle_langs', '자막 언어', value=arg['recent_subtitle_langs'], col='3', desc=['all: 모든 언어', 'ko: 한국어만', 'ko,en: 쉼표 구분', '공백: 다운로드 안 함']) }}
   {{ macros.setting_checkbox('recent_retry_user_abort', '사용자 중지 항목 다시 받기', value=arg['recent_retry_user_abort'], desc='On : 다음 스케쥴링 때 다시 받습니다.') }}
   {{ macros.setting_radio_with_value('recent_download_mode', '다운로드 모드', [['blacklist', '블랙리스트'], ['whitelist', '화이트리스트']], value=arg['recent_download_mode']) }}
-  {{ macros.setting_select('recent_drm', 'DRM_tool', [['aria2c', 'aria2c'], ['m3u8dl_RE', 'm3u8dl_RE']], col='3', value=arg['recent_drm']) }}
 {{ macros.m_tab_content_end() }} 
 
 {{ macros.m_tab_content_start('scheduler', false) }}
